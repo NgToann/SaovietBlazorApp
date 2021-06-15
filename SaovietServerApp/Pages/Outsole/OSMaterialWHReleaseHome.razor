@@ -1,0 +1,101 @@
+﻿@page "/Outsole/OSMWHRelease"
+@using AntDesign
+@using SaovietServerBlazorApp.Models
+@using SaovietServerBlazorApp.Services
+@inject OSMaterialWHService osMaterialWHService
+
+
+<h3>Outsole Material WH Release</h3>
+<div>
+    <Row>
+        <Col Xs="24" Sm="12" Md="8" Lg="8" Xl="8">
+        <Search Placeholder="input search text" Size="@InputSize.Large" EnterButton="@("Search")" @bind-Value="@txtValue" OnSearch="OnSearch" />
+        </Col>
+    </Row>
+</div>
+
+@if (osMaterialByIndexNo == null || osMaterialByIndexNo.Count() == 0)
+{
+    <Empty Simple />
+}
+else
+{
+    <div style="margin-top: 15px;">
+        <Card Style="margin-bottom:5px;">
+            <p>ProductNo List</p>
+            <Row Gutter="(20, 20)">
+                @foreach (var productNo in productNoList)
+                {
+                    <AntDesign.Col>
+                        <Badge Count="99">
+                            <Button Icon="gold" Size="large" type="primary" Danger="true" OnClick="() => POClicked(productNo)">@productNo</Button>
+                        </Badge>
+                    </AntDesign.Col>
+                }
+            </Row>
+        </Card>
+        <Table TItem="OSMaterialWHCheckModel" DataSource="@osMaterialByIndexNo"
+               ScrollY="400px" PageSize="50" Loading="loading"
+               Size="@TableSize.Small" Bordered="true">
+            <Column Title="WorkerId" Class="text-center" @bind-Field="@context.WorkerId" Sortable="true" />
+            <Column Title="ProductNo" Class="text-center" @bind-Field="@context.ProductNo" />
+            <Column Title="CheckingDate" Class="text-center" @bind-Field="@context.CheckingDate" Format="MM/dd" />
+            <Column Title="SizeNo" @bind-Field="@context.SizeNo" />
+            <Column Title="Quantity" @bind-Field="@context.Quantity" />
+            <Column Title="Reject" @bind-Field="@context.Reject" />
+            <Column Title="WorkingCart" @bind-Field="@context.WorkingCard" />
+            <Column Title="IsConfirm" Field="@context.IsConfirm">
+                <Switch @bind-Value="@context.IsConfirm"></Switch>
+            </Column>
+        </Table>
+    </div>
+}
+
+@inject MessageService _message;
+@code{
+    private string btnProductNoValue { get; set; }
+    private bool loading = true;
+    private string txtValue { get; set; }
+
+    private List<OSMaterialWHCheckModel> osMaterialByIndexNo;
+    private List<OrderModel> ordersList;
+    private List<OutsoleSupplierModel> outsoleSupplierList;
+
+    private List<String> productNoList;
+
+    public async Task OnSearch()
+    {
+        StateHasChanged();
+        loading = true;
+
+        var indexNo = 0;
+        Int32.TryParse(txtValue, out indexNo);
+
+        var productNoIsEnableList = ordersList.Select(s => s.ProductNo).ToList();
+
+        osMaterialByIndexNo = await Task.Run(() => osMaterialWHService.GetOSMaterialByIndexNo(indexNo));
+        osMaterialByIndexNo = osMaterialByIndexNo.Where(w => productNoIsEnableList.Contains(w.ProductNo)).ToList();
+        productNoList = osMaterialByIndexNo.Select(s => s.ProductNo).Distinct().OrderBy(o => o).ToList();
+        loading = false;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        ordersList = await Task.Run(() => osMaterialWHService.GetOrdersIsEnable());
+        outsoleSupplierList = await Task.Run(() => osMaterialWHService.GetOutsoleSuppliers());
+    }
+
+    protected async Task POClicked(string productNo)
+    {
+        await _message.Success(productNo + " Clicked !");
+        
+        var confirmOSMaterialByPO = osMaterialByIndexNo.Where(w => w.ProductNo == productNo).ToList();
+        foreach(var updateModel in confirmOSMaterialByPO)
+        {
+            updateModel.IsConfirm = true;
+            updateModel.ConfirmedTime = DateTime.Now;
+            await Task.Run(() => osMaterialWHService.ConfirmMaterial(updateModel));
+        }
+    }
+}
+
