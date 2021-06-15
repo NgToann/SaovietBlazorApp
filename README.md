@@ -1,0 +1,2 @@
+# SaovietBlazorApp
+digital transform project
