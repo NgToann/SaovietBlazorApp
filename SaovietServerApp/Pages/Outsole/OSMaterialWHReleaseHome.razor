@@ -101,12 +101,12 @@ else
             @poDisplay.OutsoleStartDate
         </AntDesign.Col>
     </Row>
-    <Row Gutter="30" Style="margin-top: 5px;">
+    <Row Style="margin-top: 5px;">
         @foreach (var osMats in poDisplay.OSMaterialList)
         {
-            <AntDesign.Col Style="text-align:center;">
+            <AntDesign.Col Style="text-align:center; padding: 0px 10px;">
                 <p style="font-size:1.1rem;"><Icon Type="number"></Icon>@osMats.SizeNo</p>
-                <p style="font-size:1.4rem; color:blue;">@osMats.Quantity</p>
+                <p style="font-size:1.4rem; color:blue; margin-bottom: 0px;">@osMats.Quantity</p>
             </AntDesign.Col>
         }
     </Row>
