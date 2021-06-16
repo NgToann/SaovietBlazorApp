@@ -24,11 +24,18 @@ else
         <Card Style="margin-bottom:5px;">
             <p>ProductNo List</p>
             <Row Gutter="(20, 20)">
-                @foreach (var productNo in productNoList)
+                @foreach (var poStatus in poStatusList)
                 {
                     <AntDesign.Col>
                         <Badge Count="99">
-                            <Button Icon="gold" Size="large" type="primary" Danger="true" OnClick="() => POClicked(productNo)">@productNo</Button>
+                            @if (poStatus.IsConfirm)
+                            {
+                                <Button Icon="gold" Size="large" type="primary" OnClick="() => POClicked(poStatus.ProductNo)">@poStatus.ProductNo</Button>
+                            }
+                            else
+                            {
+                                <Button Icon="gold" Size="large" type="primary" Danger="true" OnClick="() => POClicked(poStatus.ProductNo)">@poStatus.ProductNo</Button>
+                            }
                         </Badge>
                     </AntDesign.Col>
                 }
@@ -49,6 +56,61 @@ else
             </Column>
         </Table>
     </div>
+
+
+    // Modal Component
+    RenderFragment footer =@<Template>
+        <Button OnClick="@HandleOk" @key="@( "submit" )" Type="primary" Loading="@_loading">Confirm</Button>
+        <Button OnClick="@HandleCancel" @key="@( "back" )" Danger="true">Cancel</Button>
+    </Template>;
+<Modal Title="@_modalTitle"
+       Visible="@_visible"
+       OnOk="@HandleOk"
+       OnCancel="@HandleCancel"
+       Footer="@footer">
+    
+    <Row Gutter="30">
+        <AntDesign.Col>
+            ProductNo
+            <br />
+            Supplier
+            <br />
+            IndexNo
+            <br />
+            ArticleNo
+            <br />
+            OutsoleCode
+            <br />
+            Line
+            <br />
+            StartDate
+        </AntDesign.Col>
+        <AntDesign.Col>
+            @poDisplay.ProductNo
+            <br />
+            @poDisplay.SupplierName
+            <br />
+            @poDisplay.IndexNo
+            <br />
+            @poDisplay.ArticleNo
+            <br />
+            @poDisplay.OutsoleCode
+            <br />
+            @poDisplay.OutsoleLine
+            <br />
+            @poDisplay.OutsoleStartDate
+        </AntDesign.Col>
+    </Row>
+    <Row Gutter="30" Style="margin-top: 5px;">
+        @foreach (var osMats in poDisplay.OSMaterialList)
+        {
+            <AntDesign.Col Style="text-align:center;">
+                <p style="font-size:1.1rem;"><Icon Type="number"></Icon>@osMats.SizeNo</p>
+                <p style="font-size:1.4rem; color:blue;">@osMats.Quantity</p>
+            </AntDesign.Col>
+        }
+    </Row>
+</Modal>
 }
 
 @inject MessageService _message;
@@ -56,12 +118,13 @@ else
     private string btnProductNoValue { get; set; }
     private bool loading = true;
     private string txtValue { get; set; }
+    private POInforDisplay poDisplay;
 
     private List<OSMaterialWHCheckModel> osMaterialByIndexNo;
     private List<OrderModel> ordersList;
     private List<OutsoleSupplierModel> outsoleSupplierList;
 
-    private List<String> productNoList;
+    private List<POStatusModel> poStatusList;
 
     public async Task OnSearch()
     {
@@ -75,7 +138,19 @@ else
 
         osMaterialByIndexNo = await Task.Run(() => osMaterialWHService.GetOSMaterialByIndexNo(indexNo));
         osMaterialByIndexNo = osMaterialByIndexNo.Where(w => productNoIsEnableList.Contains(w.ProductNo)).ToList();
-        productNoList = osMaterialByIndexNo.Select(s => s.ProductNo).Distinct().OrderBy(o => o).ToList();
+
+        poStatusList = new List<POStatusModel>();
+        foreach (var pro in productNoIsEnableList)
+        {
+            var osMatsByPO = osMaterialByIndexNo.FirstOrDefault(f => f.ProductNo == pro);
+            if (osMatsByPO != null)
+                poStatusList.Add(new POStatusModel
+                {
+                    ProductNo = pro,
+                    IsConfirm = osMatsByPO.IsConfirm
+                });
+        }
+
         loading = false;
     }
 
@@ -85,17 +160,109 @@ else
         outsoleSupplierList = await Task.Run(() => osMaterialWHService.GetOutsoleSuppliers());
     }
 
+    private List<OSMaterialWHCheckModel> confirmOSMaterialByPO;
     protected async Task POClicked(string productNo)
     {
-        await _message.Success(productNo + " Clicked !");
-        
-        var confirmOSMaterialByPO = osMaterialByIndexNo.Where(w => w.ProductNo == productNo).ToList();
-        foreach(var updateModel in confirmOSMaterialByPO)
+        // Check IsConfirm ?
+
+        var osMaterialByPO = osMaterialByIndexNo.FirstOrDefault(f => f.ProductNo == productNo);
+        if (osMaterialByPO != null && osMaterialByPO.IsConfirm)
         {
-            updateModel.IsConfirm = true;
-            updateModel.ConfirmedTime = DateTime.Now;
-            await Task.Run(() => osMaterialWHService.ConfirmMaterial(updateModel));
+            //_message.Config(() => { });
+            await _message.Success(productNo + " has been confirmed !");
+
+            return;
         }
+
+        confirmOSMaterialByPO = osMaterialByIndexNo.Where(w => w.ProductNo == productNo).ToList();
+
+        _modalTitle = String.Format("Please check detail infor before confirm: {0}", productNo);
+        var order = ordersList.FirstOrDefault(f => f.ProductNo == productNo);
+        var supplier = outsoleSupplierList.FirstOrDefault(f => f.OutsoleSupplierId == osMaterialByPO.OutsoleSupplierId);
+        poDisplay = new POInforDisplay
+        {
+            ProductNo = productNo,
+            IndexNo = osMaterialByPO.WorkingCard.ToString(),
+            SupplierName = supplier.Name,
+            ArticleNo = order.ArticleNo,
+            OutsoleCode = order.OutsoleCode,
+            OutsoleLine = "Stockfit 2A",
+            OutsoleStartDate = "2021/16/06",
+            OSMaterialList = osMaterialByIndexNo.Where(w => w.ProductNo == productNo).ToList(),
+        };
+        _visible = false;
+        ShowModal();
     }
+
+    private class POStatusModel
+    {
+        public string ProductNo { get; set; }
+        public bool IsConfirm { get; set; }
+    }
+
+    private class POInforDisplay
+    {
+        public string ProductNo { get; set; }
+        public string IndexNo { get; set; }
+        public string ArticleNo { get; set; }
+        public string OutsoleCode { get; set; }
+        public string SupplierName { get; set; }
+        public string OutsoleStartDate { get; set; }
+        public string OutsoleLine { get; set; }
+        public List<OSMaterialWHCheckModel> OSMaterialList { get; set; }
+    }
+
+    // Modal
+    string _modalTitle = "";
+    bool _visible = false;
+    bool _loading = false;
+
+    private void ShowModal()
+    {
+        _visible = true;
+    }
+
+
+    private async Task HandleOk(MouseEventArgs e)
+    {
+        _loading = true;
+
+        // Update Database
+        foreach (var updateItem in confirmOSMaterialByPO)
+        {
+            updateItem.IsConfirm = true;
+            updateItem.ConfirmedTime = DateTime.Now;
+            await Task.Run(() => osMaterialWHService.ConfirmStatusOSMaterial(updateItem));
+        }
+        // update PO Status
+        poStatusList.Where(w => w.ProductNo == confirmOSMaterialByPO.FirstOrDefault().ProductNo).ForEach(f => f.IsConfirm = true);
+
+        await Task.Delay(3000);
+
+        _visible = false;
+        _loading = false;
+    }
+
+    private void HandleCancel(MouseEventArgs e)
+    {
+        //_loading = true;
+
+        //// Update Database
+        //foreach (var updateItem in confirmOSMaterialByPO)
+        //{
+        //    updateItem.IsConfirm = false;
+        //    updateItem.ConfirmedTime = DateTime.Now;
+        //    await Task.Run(() => osMaterialWHService.ConfirmStatusOSMaterial(updateItem));
+        //}
+        //// update PO Status
+        //poStatusList.Where(w => w.ProductNo == confirmOSMaterialByPO.FirstOrDefault().ProductNo).ForEach(f => f.IsConfirm = false);
+
+        //await Task.Delay(3000);
+
+        //_visible = false;
+        //_loading = false;
+        _visible = false;
+    }
+
 }
 

@@ -34,7 +34,7 @@ namespace SaovietServerBlazorApp.Services
             return results;
         }
 
-        public async Task<bool> ConfirmMaterial (OSMaterialWHCheckModel updateModel)
+        public async Task<bool> ConfirmStatusOSMaterial (OSMaterialWHCheckModel updateModel)
         {
             _saovietContext.OutsoleMaterialCheckingList.Attach(updateModel);
             _saovietContext.Entry(updateModel).Property(p => p.IsConfirm).IsModified = true;

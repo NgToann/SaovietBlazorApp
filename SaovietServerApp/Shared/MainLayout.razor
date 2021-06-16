@@ -60,10 +60,8 @@ private RenderFragment _content =
                             <MenuItem Key="5"><Icon Type="sliders" Theme="outline" /> Sewing</MenuItem>
                             <MenuItem Key="6"><Icon Type="ant-design" Theme="outline" /> Cut-prep</MenuItem>
                             <SubMenu Key="sub2" TitleTemplate=@outsoleTitle>
-                                <MenuItem Key="7"><Icon Type="appstore-add" Theme="outline" /> Confirm Material</MenuItem>
-                                @*<NavLink href="Outsole/OSMWHRelease">*@
-                                <MenuItem RouterLink="Outsole/OSMWHRelease" Key="8"><Icon Type="block" Theme="outline" /> Release Material</MenuItem>
-                                @*</NavLink>*@
+                                <MenuItem RouterLink="Outsole/OSMWHRelease" Key="7"><Icon Type="appstore-add" Theme="outline" /> Confirm Material</MenuItem>
+                                <MenuItem Key="8"><Icon Type="block" Theme="outline" /> Release Material</MenuItem>
                             </SubMenu>
                             <MenuItem Key="9">
                                 <NavLink>
@@ -71,7 +69,7 @@ private RenderFragment _content =
                                 </NavLink>
                             </MenuItem>
                         </SubMenu>
-                        <MenuItem RouterLink="outsole-reject" Key="10">
+                        <MenuItem Key="10">
                             <Icon Type="pie-chart" Theme="outline" />
                             <span class="nav-text">Reports</span>
                         </MenuItem>
@@ -79,30 +77,18 @@ private RenderFragment _content =
                             <Icon Type="user" Theme="outline" />
                             <span class="nav-text">User</span>
                         </MenuItem>
-                        @*<MenuItem Key="2">
-                            <Icon Type="video-camera" Theme="outline" />
-                            <span class="nav-text">Loading</span>
-                        </MenuItem>
-                        <MenuItem Key="3">
-                            <Icon Type="upload" Theme="outline" />
-                            <span class="nav-text">Sewing Incentives</span>
-                        </MenuItem>
-                        <MenuItem Key="4">
-                            <Icon Type="user" Theme="outline" />
-                            <span class="nav-text">Warehouse</span>
-                        </MenuItem>*@
                     </Menu>
                 </Content>
             </Layout>
         </Sider>
         <Layout>
-            <Content Style=" margin: 16px 16px 0;min-height:500px;">
+            <Content Style=" margin: 16px 16px 0;">
                 @*<BadgeRibbon Text="university of technical and education" Color="orange"></BadgeRibbon>*@
-                <Card>
+                <Card Style="min-height: calc(100vh - 136px);">
                     @Body
                 </Card>
             </Content>
-            <Footer Style="text-align: center;">Saoviet ©2021 Created by ItTeam Version 1.0</Footer>
+            <Footer Style="text-align: center; height:40px;">Saoviet ©2021 Created by ItTeam Version 1.0</Footer>
         </Layout>
     </Layout>
 </Layout>
