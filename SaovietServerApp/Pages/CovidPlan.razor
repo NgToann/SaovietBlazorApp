@@ -1,0 +1,267 @@
+﻿@page "/covid-plan"
+@using System.ComponentModel.DataAnnotations;
+@using System.Text.Json;
+
+@using AntDesign
+@using SaovietServerBlazorApp.Models
+@using SaovietServerBlazorApp.Services
+
+@inject WorkerService workerService
+@inject AddressService addressService
+@inject CovidPlanService covidPlanService
+
+<h2 style="text-align:center;">Khai báo thông tin địa chỉ</h2>
+
+
+<Form Model="@cvInfo"
+      LabelColSpan="6"
+      WrapperColSpan="12"
+      OnFinish="OnFinish"
+      OnFinishFailed="OnFinishFailed">
+
+    <FormItem Label="Worker Id">
+        @*<Input @bind-Value="@cvInfo.PlanDisplay.WorkerId" />*@
+        <Search Placeholder="Nhập mã worker" EnterButton="@("Search")" @bind-Value="@cvInfo.PlanDisplay.WorkerId" OnSearch="SearchWorker" />
+    </FormItem>
+    <FormItem Label="Họ tên">
+        <Input @bind-Value="@cvInfo.WorkerDisplay.FullName" />
+    </FormItem>
+    <FormItem Label="Phòng ban / Xưởng">
+        <Input @bind-Value="@cvInfo.WorkerDisplay.SectionName" />
+    </FormItem>
+    <FormItem Label="Chuyền">
+        <Input @bind-Value="@cvInfo.WorkerDisplay.LineName" />
+    </FormItem>
+    <FormItem Label="Số điện thoại">
+        <Input @bind-Value="@cvInfo.PlanDisplay.PhoneNumber" />
+    </FormItem>
+
+    <FormItem Label="Địa chỉ hiện tại">
+        <Row Gutter="16">
+            <AntDesign.Col Class="gutter-row" Span="8">
+                Thành phố (Tỉnh)
+            </AntDesign.Col>
+            <AntDesign.Col Class="gutter-row" Span="8">
+                Quận (Huyện)
+            </AntDesign.Col>
+            <AntDesign.Col Class="gutter-row" Span="8">
+                Thị trấn / Phường / Xã
+            </AntDesign.Col>
+        </Row>
+        <Row Gutter="16">
+            <AntDesign.Col Class="gutter-row" Span="8">
+                <Select DataSource="@_provinceList"
+                        @bind-Value="@cvInfo.PlanDisplay.ProvinceId"
+                        LabelName="@nameof(AddressModel.Province)"
+                        ValueName="@nameof(AddressModel.ProvinceId)"
+                        Placeholder="Chọn tỉnh"
+                        EnableSearch
+                        OnBlur="OnBlur"
+                        OnFocus="OnFocus"
+                        OnSelectedItemChanged="ProvinceSelectedItemChangedHandler"
+                        OnSearch="OnSearch">
+                </Select>
+            </AntDesign.Col>
+            <AntDesign.Col Class="gutter-row" Span="8">
+                <Select DataSource="@_districtList"
+                        @bind-Value="@cvInfo.PlanDisplay.DistrictId"
+                        LabelName="@nameof(AddressModel.District)"
+                        ValueName="@nameof(AddressModel.DistrictId)"
+                        Placeholder="Chọn quận / huyện"
+                        EnableSearch
+                        OnBlur="OnBlur"
+                        OnFocus="OnFocus"
+                        OnSelectedItemChanged="DistrictSelectedItemChanged"
+                        OnSearch="OnSearch">
+                </Select>
+            </AntDesign.Col>
+            <AntDesign.Col Class="gutter-row" Span="8">
+                <Select DataSource="@_communeList"
+                        @bind-Value="@cvInfo.PlanDisplay.CommuneId"
+                        LabelName="@nameof(AddressModel.Commune)"
+                        ValueName="@nameof(AddressModel.CommuneId)"
+                        Placeholder="Chọn xã / phường"
+                        EnableSearch
+                        OnBlur="OnBlur"
+                        OnFocus="OnFocus"
+                        OnSelectedItemChanged="CommunueSelectedItemChanged"
+                        OnSearch="OnSearch">
+                </Select>
+            </AntDesign.Col>
+        </Row>
+    </FormItem>
+
+    <FormItem Label="Chi tiết">
+        <TextArea @bind-Value="@cvInfo.PlanDisplay.AddressDetail" />
+    </FormItem>
+
+
+    @*<FormItem Label="DatePicker">
+            <DatePicker @bind-Value="@context.DatePicker" />
+        </FormItem>
+        <FormItem Label="RangePicker">
+            <RangePicker @bind-Value="@context.RangePicker" />
+        </FormItem>
+        <FormItem Label="InputNumber">
+            <AntDesign.InputNumber @bind-Value="@context.Number" />
+        </FormItem>
+        <FormItem Label="Switch">
+            <Switch @bind-Value="@context.Switch" />
+        </FormItem>*@
+    <FormItem Label="Tình trạng sức khỏe">
+        <RadioGroup @bind-Value="@cvInfo.PlanDisplay.HeathStatus">
+            <Radio RadioButton Value="@("Trạng thái 1")">Trạng thái 1</Radio>
+            <Radio RadioButton Value="@("Trạng thái 2")">Trạng thái 2</Radio>
+            <Radio RadioButton Value="@("Trạng thái 3")">Trạng thái 3</Radio>
+            <Radio RadioButton Value="@("Trạng thái 4")">Trạng thái 4</Radio>
+        </RadioGroup>
+    </FormItem>
+
+    <FormItem Label="Thông tin thêm">
+        <p>Thông tin thêm</p>
+    </FormItem>
+
+    <FormItem WrapperColOffset="6" WrapperColSpan="12">
+        <Button Size="large" HtmlType="submit" type="primary" OnClick="SubmitClick">
+            Submit
+        </Button>
+    </FormItem>
+
+</Form>
+<p>@_addressSelected?.Province-@_addressSelected?.District - @_addressSelected?.Commune</p>
+<p>@msg</p>
+
+@code
+{
+    class CovidInfo
+    {
+        public CovidPlanModel PlanDisplay { get; set; }
+        public WorkerModel WorkerDisplay { get; set; }
+    }
+    CovidInfo cvInfo = new CovidInfo
+    {
+        PlanDisplay = new CovidPlanModel(),
+        WorkerDisplay = new WorkerModel()
+    };
+
+    private WorkerModel worker;
+    private List<WorkerModel> workerList;
+    private List<AddressModel> addressList;
+
+    protected override async Task OnInitializedAsync()
+    {
+        workerList = await Task.Run(() => workerService.GetWorkers());
+        addressList = await Task.Run(() => addressService.GetAddresses());
+        var provinceIds = addressList.Select(s => s.ProvinceId).Distinct().ToList();
+        foreach (var proId in provinceIds)
+        {
+            var province = addressList.FirstOrDefault(f => f.ProvinceId == proId);
+            if (province != null)
+                _provinceList.Add(province);
+        }
+    }
+
+    protected void SearchWorker()
+    {
+        // search workerinfo
+        if (string.IsNullOrEmpty(cvInfo.PlanDisplay.WorkerId))
+            return;
+        var workerInfo = workerList.FirstOrDefault(f => f.WorkerId.ToUpper() == cvInfo.PlanDisplay.WorkerId.Trim().ToUpper());
+        if (workerInfo != null)
+        {
+            cvInfo.WorkerDisplay = workerInfo;
+        }
+        else
+        {
+            cvInfo.WorkerDisplay = new WorkerModel();
+        }
+    }
+
+    protected async Task SubmitClick()
+    {
+        var addModel = cvInfo.PlanDisplay;
+        try
+        {
+            addModel.AddressId = _addressSelected.AddressId;
+            addModel.CreatedTime = DateTime.Now;
+            await covidPlanService.AddCovidPlan(addModel);
+        }
+        catch { }
+        //cvInfo = new CovidInfo
+        //{
+        //    PlanDisplay = new CovidPlanModel(),
+        //    WorkerDisplay = new WorkerModel()
+        //};
+    }
+
+    //private void OnFinish(EditContext editContext)
+    //{
+    //    var addModel = cvInfo.PlanDisplay;
+    //    try
+    //    {
+    //        covidPlanService.AddCovidPlan(addModel);
+    //    }
+    //    catch { }
+    //    cvInfo = new CovidInfo();
+    //}
+    string msg;
+    private void OnFinish()
+    {
+        msg = $"Success:{JsonSerializer.Serialize(cvInfo)}";
+    }
+
+    private void OnFinishFailed()
+    {
+        msg = $"Failed:{JsonSerializer.Serialize(cvInfo)}";
+    }
+
+    private List<AddressModel> _provinceList = new List<AddressModel>();
+    AddressModel _addressSelected;
+
+    private List<AddressModel> _districtList;
+    private void ProvinceSelectedItemChangedHandler(AddressModel value)
+    {
+        _districtList = new List<AddressModel>();
+        _communeList = new List<AddressModel>();
+        var districtIds = addressList.Where(w => w.ProvinceId == value.ProvinceId).Select(s => s.DistrictId).Distinct().ToList();
+        foreach (var disId in districtIds)
+        {
+            var district = addressList.FirstOrDefault(f => f.DistrictId == disId);
+            if (district != null)
+                _districtList.Add(district);
+        }
+    }
+
+    private List<AddressModel> _communeList;
+    private void DistrictSelectedItemChanged(AddressModel value)
+    {
+        _communeList = new List<AddressModel>();
+        var communeIds = addressList.Where(w => w.DistrictId == value.DistrictId).Select(s => s.CommuneId).Distinct().ToList();
+        foreach (var cId in communeIds)
+        {
+            var commune = addressList.FirstOrDefault(f => f.CommuneId == cId);
+            if (commune != null)
+                _communeList.Add(commune);
+        }
+    }
+
+    private void CommunueSelectedItemChanged(AddressModel value)
+    {
+        _addressSelected = value;
+    }
+
+    private void OnBlur()
+    {
+
+    }
+
+    private void OnFocus()
+    {
+
+    }
+
+    private void OnSearch(string value)
+    {
+
+    }
+}

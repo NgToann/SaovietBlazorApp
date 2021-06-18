@@ -14,6 +14,11 @@ namespace SaovietServerBlazorApp.Data
         public DbSet<OrderModel> Orders { get; set; }
         public DbSet<OutsoleSupplierModel> OutsoleSuppliers { get; set; }
         public DbSet<OSMaterialWHCheckModel> OutsoleMaterialCheckingList { get; set; }
+        public DbSet<AddressModel> Addresses { get; set; }
+
+        public DbSet<WorkerModel> Workers { get; set; }
+
+        public DbSet<CovidPlanModel> CovidPlans { get; set; }
 
     }
 }

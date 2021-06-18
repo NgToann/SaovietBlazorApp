@@ -3,15 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SaovietServerBlazorApp.Data;
 
 namespace SaovietServerBlazorApp.Migrations
 {
     [DbContext(typeof(SaovietContext))]
-    partial class SaovietContextModelSnapshot : ModelSnapshot
+    [Migration("20210617132208_create worker table")]
+    partial class createworkertable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -47,40 +49,6 @@ namespace SaovietServerBlazorApp.Migrations
                     b.HasKey("AddressId");
 
                     b.ToTable("Addresses");
-                });
-
-            modelBuilder.Entity("SaovietServerBlazorApp.Models.CovidPlanModel", b =>
-                {
-                    b.Property<string>("WorkerId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("AddressDetail")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("AddressId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("CommuneId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreatedTime")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("DistrictId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("HeathStatus")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PhoneNumber")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ProvinceId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("WorkerId");
-
-                    b.ToTable("CovidPlans");
                 });
 
             modelBuilder.Entity("SaovietServerBlazorApp.Models.OSMaterialWHCheckModel", b =>
